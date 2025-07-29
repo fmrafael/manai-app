@@ -164,75 +164,93 @@ export default function Home() {
   }, [loading, messages]);
 
   async function handleSend() {
-    const trimmed = input.trim();
-    if (!trimmed) return;
+  const trimmed = input.trim();
+  if (!trimmed) return;
 
-    const today = new Date().toISOString().split("T")[0];
-    const storedDate = localStorage.getItem("lastMessageDate");
-    let count = parseInt(localStorage.getItem("dailyMessageCount") || "0");
+  const today = new Date().toISOString().split("T")[0];
+  const storedDate = localStorage.getItem("lastMessageDate");
+  let count = parseInt(localStorage.getItem("dailyMessageCount") || "0");
 
-    if (storedDate !== today) {
-      count = 0;
-      localStorage.setItem("lastMessageDate", today);
-    }
+  if (storedDate !== today) {
+    count = 0;
+    localStorage.setItem("lastMessageDate", today);
+  }
 
-    if (!isSubscriber && count >= FREE_LIMIT_DAILY) return;
+  if (!isSubscriber && count >= FREE_LIMIT_DAILY) return;
 
-    if (!isSubscriber) {
-      count++;
-      localStorage.setItem("dailyMessageCount", count.toString());
-    }
+  if (!isSubscriber) {
+    count++;
+    localStorage.setItem("dailyMessageCount", count.toString());
+  }
 
-    const newMessages = [
-      ...messages,
-      { id: messages.length, text: trimmed, role: "user" },
-    ];
-    setMessages(newMessages);
-    setInput("");
+  type Message = {
+  id: number;
+  text: string;
+  role: "user" | "assistant";
+  created_at?: string; // adiciona aqui
+};
 
-    if (!isSubscriber) {
-      localStorage.setItem(`chatHistory_${today}`, JSON.stringify(newMessages));
-    } else {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        const { error } = await supabase.from("memories").insert([
-          { user_id: user.id, role: "user", text: trimmed },
-        ]);
-        if (error) console.error("Erro salvando memória:", error.message);
-      }
-    }
 
-    // Enviar todo o contexto de mensagens para API
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: newMessages }),
-    });
+ const userMessage: Message = {
+  id: messages.length,
+  text: trimmed,
+  role: "user",
+  created_at: new Date().toISOString(),
+};
 
-    const data = await res.json();
 
-    const updatedMessages = [
-      ...newMessages,
-      { id: newMessages.length, text: data.reply, role: "assistant" },
-    ];
-    setMessages(updatedMessages);
+  const newMessages: Message[] = [...messages, userMessage];
 
-    if (isSubscriber) {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        const { error } = await supabase.from("memories").insert([
-          { user_id: user.id, role: "assistant", text: data.reply },
-        ]);
-        if (error) console.error("Erro salvando resposta IA:", error.message);
-      }
-    } else {
-      localStorage.setItem(`chatHistory_${today}`, JSON.stringify(updatedMessages));
+  setMessages(newMessages);
+  setInput("");
+
+  if (!isSubscriber) {
+    localStorage.setItem(`chatHistory_${today}`, JSON.stringify(newMessages));
+  } else {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      const { error } = await supabase
+        .from("memories")
+        .insert([{ user_id: user.id, role: "user", text: trimmed }]);
+      if (error) console.error("Erro salvando memória:", error.message);
     }
   }
+
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages: newMessages }),
+  });
+
+  const data = await res.json();
+
+  const assistantMessage: Message = {
+    id: newMessages.length,
+    text: data.reply,
+    role: "assistant",
+    created_at: new Date().toISOString(),
+  };
+
+  const updatedMessages: Message[] = [...newMessages, assistantMessage];
+  setMessages(updatedMessages);
+
+  if (isSubscriber) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      const { error } = await supabase
+        .from("memories")
+        .insert([{ user_id: user.id, role: "assistant", text: data.reply }]);
+      if (error) console.error("Erro salvando resposta IA:", error.message);
+    }
+  } else {
+    localStorage.setItem(`chatHistory_${today}`, JSON.stringify(updatedMessages));
+  }
+}
+
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {

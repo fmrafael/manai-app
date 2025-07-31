@@ -1,9 +1,7 @@
   "use client";
 
   import { supabase } from "@/lib/supabaseClient";
-  import { loadStripe } from "@stripe/stripe-js";
 
-  const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 
   export default function LoginPage() {
@@ -11,7 +9,7 @@
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: window.location.origin, // opcional, volta para a home
+              redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/`,
         },
       });
       if (error) {
@@ -19,32 +17,7 @@
       }
     } 
 
-   async function handleSubscribe() {
-  try {
-    const res = await fetch("/api/stripe-checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ priceId: "price_1Rq31fLKLhrIIm4HIYvWL2Mz" }), // seu priceId aqui
-    });
-
-    const data = await res.json();
-
-    if (data.sessionId) {
-      const stripe = await stripePromise;
-      if (!stripe) {
-        alert("Erro ao carregar Stripe");
-        return;
-      }
-      const { error } = await stripe.redirectToCheckout({ sessionId: data.sessionId });
-      if (error) alert(error.message);
-    } else {
-      alert("Não foi possível iniciar o checkout. Tente novamente.");
-    }
-  } catch (error) {
-    console.error("Erro ao iniciar checkout:", error);
-    alert("Ocorreu um erro. Tente novamente mais tarde.");
-  }
-}
+   
 
 
     return (

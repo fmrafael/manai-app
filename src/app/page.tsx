@@ -32,7 +32,8 @@ export default function Home() {
   const { data: { session } } = await supabase.auth.getSession();
 
   if (!session) {
-    alert("Usuário não está logado.");
+      router.push("/login");
+    
     return;
   }
 
@@ -273,29 +274,56 @@ export default function Home() {
   return (
     <main className="flex min-h-screen bg-gray-50">
       <section className="flex flex-col flex-1 max-w-3xl mx-auto w-full p-6 bg-white border border-gray-200 rounded-xl shadow-lg mt-16">
-        <header className="flex justify-between items-center mb-6">
-          <div className="text-2xl font-semibold text-gray-800">ManAI</div>
-          <button
-            onClick={() => router.push("/login")}
-            className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 transition"
-          >
-            {isLoggedIn ? "Minha Conta" : "Entrar na Conta"}
-          </button>
-
-<button
-  onClick={handleSubscribe}
-  className={`px-4 py-2 rounded text-white transition ${
-    isSubscriber ? 'bg-gray-500 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
-  }`}
-  disabled={isSubscriber}
+      <header className="flex justify-between items-center mb-6">
+  <div className="text-2xl font-semibold text-gray-800">ManAI</div>
+  <div className="flex gap-4">
+    {isLoggedIn ? (
+      <>
+        <button
+          onClick={() => router.push("/account")}
+          className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 transition"
+        >
+          Minha Conta
+        </button>
+        <button
+          onClick={handleSubscribe}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+        >
+          {isSubscriber ? "PRO" : "Assinar PRO"}
+        </button>
+      </>
+    ) : (
+      <>
+    <button
+  onClick={async () => {
+    if (!isLoggedIn) {
+      const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+      if (error) {
+        console.error("Erro ao fazer login:", error.message);
+        alert("Erro ao tentar login com Google.");
+      }
+    } else {
+      router.push("/account"); // Placeholder para futura página de conta
+    }
+  }}
+  className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 transition"
 >
-  {isSubscriber ? 'PRO' : 'Assinar PRO'}
+  {isLoggedIn ? "Minha Conta" : "Entrar na Conta"}
 </button>
 
+        <button
+          onClick={() => router.push("/login")}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+        >
+          Inscrever-se
+        </button>
+      </>
+    )}
+  </div>
+</header>
 
 
 
-        </header>
 
         <h1 className="text-2xl md:text-3xl font-bold mb-4 text-center text-gray-900">
           👋 Bem-vindo!

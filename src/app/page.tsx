@@ -62,6 +62,7 @@ export default function Home() {
   const data = await response.json();
 
   if (data.sessionId) {
+
     const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
     if (stripe) {
       await stripe.redirectToCheckout({ sessionId: data.sessionId });
@@ -369,14 +370,14 @@ export default function Home() {
             <p className="mb-4 text-yellow-800 font-semibold">
               Você atingiu o limite de {FREE_LIMIT_DAILY} mensagens gratuitas.
             </p>
-            <a
-              href="https://chk.eduzz.com/1W3ZZ5XQW2"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block bg-blue-800 text-white px-6 py-3 rounded-lg hover:bg-blue-900 transition"
-            >
-              Faça Upgrade para mensagens ilimitadas
-            </a>
+<button
+  onClick={handleSubscribe}
+  className="inline-block bg-blue-800 text-white px-6 py-3 rounded-lg hover:bg-blue-900 transition"
+>
+  Assinar PRO para mensagens ilimitadas
+</button>
+
+
           </div>
         ) : (
           <form
